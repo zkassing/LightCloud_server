@@ -1,6 +1,7 @@
 const router = require('koa-router')()
-const demo = require('./demo')
+const items = require('./items')
 router.prefix('/api')
 
-router.use('/demo', demo.routes(), demo.allowedMethods())
+router.use('/items', items.routes(), items.allowedMethods())
+
 module.exports = router
