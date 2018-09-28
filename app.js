@@ -1,37 +1,61 @@
 const Koa = require('koa')
+const Router = require('koa-router')
 const app = new Koa()
+const router = new Router()
+
+const views = require('koa-views')
+const co = require('co')
+const convert = require('koa-convert')
 const json = require('koa-json')
 const onerror = require('koa-onerror')
 const bodyparser = require('koa-bodyparser')
 const logger = require('koa-logger')
+const debug = require('debug')('koa2:server')
+const path = require('path')
 
-const index = require('./routes/index')
-const response_formatter = require('./middleware/response')
+const config = require('./config')
+const routes = require('./routes')
+
+const port = process.env.PORT || config.port
+
 // error handler
 onerror(app)
 
 // middlewares
-app.use(bodyparser({
-  enableTypes:['json', 'form', 'text']
-}))
-app.use(json())
-app.use(logger())
-app.use(require('koa-static')(__dirname + '/public'))
+app.use(bodyparser())
+  .use(json())
+  .use(logger())
+  .use(require('koa-static')(__dirname + '/public'))
+  .use(views(path.join(__dirname, '/views'), {
+    options: {settings: {views: path.join(__dirname, 'views')}},
+    map: {'ejs': 'ejs'},
+    extension: 'ejs'
+  }))
+  .use(router.routes())
+  .use(router.allowedMethods())
 
 // logger
 app.use(async (ctx, next) => {
   const start = new Date()
   await next()
   const ms = new Date() - start
-  console.log(`${ctx.method} ${ctx.url} - ${ms}ms`)
+  console.log(`${ctx.method} ${ctx.url} - $ms`)
 })
-app.use(response_formatter)
-// routes
-app.use(index.routes(), index.allowedMethods())
 
-// error-handling
-app.on('error', (err, ctx) => {
-  console.error('server error', err, ctx)
-});
+router.get('/', async (ctx, next) => {
+  // ctx.body = 'Hello World'
+  ctx.state = {
+    title: 'Koa2'
+  }
+  await ctx.render('index', ctx.state)
+})
 
-module.exports = app
+routes(router)
+app.on('error', function(err, ctx) {
+  console.log(err)
+  logger.error('server error', err, ctx)
+})
+
+module.exports = app.listen(config.port, () => {
+  console.log(`Listening on http://localhost:${config.port}`)
+})

@@ -1,7 +1,9 @@
-const router = require('koa-router')()
-const items = require('./items')
-router.prefix('/api')
+module.exports =  (router) => {
+  router.get('/welcome', async function (ctx, next) {
+    ctx.state = {
+      title: 'koa2 title'
+    };
 
-router.use('/items', items.routes(), items.allowedMethods())
-
-module.exports = router
+    await ctx.render('welcome', {title: ctx.state});
+  })
+}
